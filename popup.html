@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Configurar Busca</title>
+  </head>
+  <body>
+    <div id="setup-section">
+      <label for="sheetName">Nome da Planilha:</label>
+      <input type="text" id="sheetName" placeholder="Digite o nome da planilha" />
+      <p>A planilha será criada com um template predefinido, com as guias "a comprar" e "referência". Futuramente, você poderá escolher entre templates personalizados.</p>
+      <button id="createSheet">Criar Planilha</button>
+    </div>
+    
+    <div id="actions-section" style="display: none;">
+      <button id="addToBuy">💸 Adicionar a Comprar</button>
+      <button id="addToReference">💎 Adicionar a Referência</button>
+      <button id="reconfigure">Configurar Nova Planilha</button>
+    </div>
+    
+    <script src="popup.js"></script>
+  </body>
+</html>

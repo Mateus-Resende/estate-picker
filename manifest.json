@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Coletor de apartamentos",
+  "version": "1.0",
+  "description": "Coleta informações de apartamentos e salva em uma planilha.",
+  "permissions": ["storage", "activeTab", "scripting", "identity"],
+  "oauth2": {
+    "client_id": "471246440623-8gukq7tvjh3tel2lav1bm34lg0qr6rfo.apps.googleusercontent.com",
+    "scopes": [
+      "https://www.googleapis.com/auth/spreadsheets",
+      "https://www.googleapis.com/auth/drive.file"
+    ]
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.quintoandar.com.br/*"],
+      "js": ["content.js"]
+    }
+  ]
+}
