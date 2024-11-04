@@ -49,25 +49,6 @@ async function getSheetId(spreadsheetId, sheetTitle) {
     throw new Error(`Aba com o título "${sheetTitle}" não encontrada.`);
   }
 }
-async function listSpreadsheets() {
-  const token = await authenticate();
-
-  // Obtém a lista de planilhas do usuário
-  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets?fields=spreadsheetId,properties(title)`, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error('Erro ao buscar planilhas: ' + response.statusText);
-  }
-
-  const data = await response.json();
-  return data.spreadsheets || [];
-}
 
 async function createNewSpreadsheet(newSheetName) {
   const token = await authenticate();
@@ -188,7 +169,30 @@ function addEntryToSheet(action) {
   });
 }
 
-// Função que verifica se o ID da planilha já existe
+// Função que lista as planilhas do usuário e verifica se uma planilha com o nome já existe
+async function findSpreadsheetByName(sheetName) {
+  const token = await authenticate();
+  
+  // Faz a requisição para listar as planilhas do usuário
+  const response = await fetch(`https://sheets.googleapis.com/v4/spreadsheets?fields=files(id,name)`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error('Erro ao buscar planilhas: ' + response.statusText);
+  }
+
+  const data = await response.json();
+  const spreadsheet = data.files.find(file => file.name === sheetName);
+  
+  return spreadsheet ? spreadsheet.id : null;
+}
+
+// Função para inicializar ou reutilizar a planilha
 async function initializeSheet(sheetName) {
   return new Promise((resolve, reject) => {
     chrome.storage.sync.get("sheetId", async (result) => {
@@ -197,17 +201,27 @@ async function initializeSheet(sheetName) {
         resolve(result.sheetId); // Retorna o ID da planilha já configurada
       } else {
         try {
-          // Se o ID não existe, cria uma nova planilha
-          const newSpreadsheetId = await createNewSpreadsheet(sheetName);
-          await copySheetsToNewSpreadsheet(newSpreadsheetId);
-
-          // Salva o novo ID no armazenamento do Chrome
-          chrome.storage.sync.set({ sheetId: newSpreadsheetId }, () => {
-            console.log("Nova planilha criada e ID salvo:", newSpreadsheetId);
-            resolve(newSpreadsheetId);
-          });
+          // Procura uma planilha existente com o nome fornecido
+          const existingSheetId = await findSpreadsheetByName(sheetName);
+          
+          if (existingSheetId) {
+            console.log("Planilha existente encontrada:", existingSheetId);
+            chrome.storage.sync.set({ sheetId: existingSheetId }, () => {
+              resolve(existingSheetId);
+            });
+          } else {
+            // Se não houver planilha existente, cria uma nova
+            const newSpreadsheetId = await createNewSpreadsheet(sheetName);
+            await copySheetsToNewSpreadsheet(newSpreadsheetId);
+            
+            // Salva o novo ID no armazenamento do Chrome
+            chrome.storage.sync.set({ sheetId: newSpreadsheetId }, () => {
+              console.log("Nova planilha criada e ID salvo:", newSpreadsheetId);
+              resolve(newSpreadsheetId);
+            });
+          }
         } catch (error) {
-          console.error("Erro ao criar a nova planilha:", error.message);
+          console.error("Erro ao configurar a planilha:", error.message);
           reject(error);
         }
       }
